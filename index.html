@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Virtual Tour</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
+<script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+
+<style>
+html, body {
+  margin: 0;
+  height: 100%;
+  background: black;
+}
+#viewer {
+  width: 100%;
+  height: 100%;
+}
+
+/* REMOVE DEFAULT ICONS */
+.pnlm-hotspot-base,
+.pnlm-hotspot,
+.pnlm-hotspot span {
+  background: none !important;
+  border: none !important;
+}
+.pnlm-hotspot span {
+  display: none !important;
+}
+</style>
+</head>
+
+<body>
+
+<div id="viewer"></div>
+
+<script>
+/* ===============================
+   SCENES
+================================ */
+const SCENES = {
+  path_0: {
+    pano: 'ar/0GATE.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:0, type:'forward', next:'path_1' }
+    ]
+  },
+
+  path_1: {
+    pano: 'ar/0WATCH.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:0, type:'forward', next:'path_2' },
+      { pitch:-15, yaw:180, type:'back', next:'path_0' }
+    ]
+  },
+
+  path_2: {
+    pano: 'ar/0WATCH1.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:0, type:'forward', next:'path_3' },
+      { pitch:-15, yaw:180, type:'back', next:'path_1' }
+    ]
+  },
+
+  path_3: {
+    pano: 'ar/0ENTRANCE.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:0, type:'forward', next:'path_4' },
+      { pitch:-10, yaw:90, type:'forward', next:'path_2' }
+    ]
+  },
+
+  path_4: {
+    pano: 'ar/0ENTRANCE1.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:0, type:'forward', next:'path_5' },
+      { pitch:-15, yaw:180, type:'back', next:'path_3' }
+    ]
+  },
+
+  path_5: {
+    pano: 'ar/0ENTRANCE2.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:0, type:'forward', next:'path_6' },
+      { pitch:-15, yaw:180, type:'back', next:'path_4' }
+    ]
+  },
+
+  path_6: {
+    pano: 'ar/0AM.jpg',
+    hotSpots: [
+      { pitch:-5, yaw:180, type:'forward', next:'path_9' },
+      { pitch:-15, yaw:0, type:'forward', next:'path_5' },
+      { pitch:-5, yaw:-135, type:'right', next:'path_8' },
+      { pitch:-5, yaw:135, type:'left', next:'path_7' }
+    ]
+  },
+  path_7: {
+    pano: 'ar/0A-1.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:180, type:'forward', next:'path_7' },
+      { pitch:-15, yaw:0, type:'back', next:'path_6' }
+    ]
+  },
+  path_8: {
+    pano: 'ar/0A1.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:180, type:'forward', next:'path_8' },
+      { pitch:-15, yaw:0, type:'forward', next:'path_9' }
+    ]
+  },
+  path_9: {
+    pano: 'ar/0BM.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:180, type:'forward', next:'path_6' },
+      { pitch:-15, yaw:0, type:'forward', next:'path_9' },
+      { pitch:-15, yaw:-135, type:'left', next:'path_7' },
+      { pitch:-20, yaw:135, type:'right', next:'path_8' }
+    ]
+  },
+
+}
+
+/* ===============================
+   ARROW
+================================ */
+function makeArrowHotspot(div, args) {
+  div.style.width = "80px";
+  div.style.height = "80px";
+
+  const arrow = document.createElement("div");
+
+  arrow.innerHTML = `
+    <svg width="60" height="60" viewBox="0 0 24 24">
+      <path d="M12 2 L22 20 H2 Z" fill="white"/>
+    </svg>
+  `;
+
+  arrow.style.cursor = "pointer";
+  arrow.style.opacity = "0.9";
+  arrow.style.transform = `rotate(${args.rotate}deg) translateY(20px)`;
+  arrow.style.transition = "all 0.2s ease";
+  arrow.style.filter = "drop-shadow(0 3px 6px rgba(0,0,0,0.6))";
+
+  arrow.onclick = (e) => {
+    e.stopPropagation();
+    viewer.loadScene(args.next);
+  };
+
+  div.appendChild(arrow);
+}
+
+/* ===============================
+   BUILD CONFIG WITH MEMORY
+================================ */
+function buildConfig() {
+  const scenes = {};
+
+  Object.keys(SCENES).forEach(id => {
+    const s = SCENES[id];
+
+    scenes[id] = {
+      panorama: s.pano,
+      hotSpots: s.hotSpots.map(h => ({
+        pitch: h.pitch,
+        yaw: h.yaw,
+        type: "info",
+        createTooltipFunc: makeArrowHotspot,
+        createTooltipArgs: {
+          next: h.next,
+          rotate:
+            h.type === "forward" ? 0 :
+            h.type === "back" ? 180 :
+            h.type === "left" ? -90 : 90
+        }
+      }))
+    };
+  });
+
+  const lastScene = localStorage.getItem('lastScene') || "path_0";
+  const yaw = parseFloat(localStorage.getItem('yaw')) || 0;
+  const pitch = parseFloat(localStorage.getItem('pitch')) || 0;
+
+  return {
+    default: {
+      firstScene: lastScene,
+      yaw: yaw,
+      pitch: pitch,
+      autoLoad: true,
+      autoRotate: -2,
+      hfov: 100
+    },
+    scenes
+  };
+}
+
+/* ===============================
+   INIT
+================================ */
+let viewer;
+
+window.onload = () => {
+  viewer = pannellum.viewer("viewer", buildConfig());
+
+  // SAVE LAST SCENE
+  viewer.on('scenechange', (sceneId) => {
+    localStorage.setItem('lastScene', sceneId);
+  });
+
+  // SAVE VIEW DIRECTION
+  setInterval(() => {
+    if (!viewer) return;
+    localStorage.setItem('yaw', viewer.getYaw());
+    localStorage.setItem('pitch', viewer.getPitch());
+  }, 500);
+
+  // ENTRY ZOOM
+  viewer.on('load', () => {
+    viewer.setHfov(120);
+    setTimeout(() => {
+      viewer.setHfov(90, 2000);
+    }, 500);
+  });
+};
+</script>
+
+</body>
+</html>
