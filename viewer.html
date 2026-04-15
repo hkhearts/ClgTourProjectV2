@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Virtual Tour</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
+<script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+
+<script src="scenes.js"></script>
+
+<style>
+  body { margin:0; background:black; }
+  #viewer { width:100%; height:100vh; }
+  .arrow { width:60px; height:60px; cursor:pointer; transition: transform 0.2s; filter: drop-shadow(0px 4px 4px rgba(0,0,0,0.5)); }
+  .arrow:hover { transform: scale(1.2); }
+</style>
+</head>
+
+<body>
+
+<div id="viewer"></div>
+
+<script>
+// SCENES and START_SCENE are loaded directly from scenes.js
+let viewer;
+let currentScene = START_SCENE;
+
+function buildScene() {
+  const scene = SCENES[currentScene];
+  if (viewer) viewer.destroy();
+
+  // Filter out any arrows that weren't mapped in the editor
+  const validArrows = scene.arrows.filter(a => a.next !== null);
+
+  viewer = pannellum.viewer("viewer", {
+    type: "equirectangular",
+    panorama: scene.pano,
+    autoLoad: true,
+    hotSpots: validArrows.map((a, i) => ({
+      id: "hs" + i,
+      pitch: a.pitch,
+      yaw: a.yaw,
+      type: "info",
+      createTooltipFunc: (div) => makeArrow(div, a.next)
+    }))
+  });
+}
+
+function makeArrow(div, nextScenePath) {
+  const arrow = document.createElement("div");
+  arrow.className = "arrow";
+  arrow.innerHTML = `<svg viewBox="0 0 24 24" width="60"><path d="M12 2 L22 20 H2 Z" fill="white"/></svg>`;
+
+  // Simple click to navigate
+  arrow.onclick = (e) => {
+    e.stopPropagation();
+    currentScene = nextScenePath;
+    buildScene();
+  };
+
+  div.appendChild(arrow);
+}
+
+// Start the tour
+buildScene();
+</script>
+</body>
+</html>

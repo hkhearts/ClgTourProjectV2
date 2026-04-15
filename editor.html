@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Tour Editor</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
+<script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+
+<style>
+  body { margin:0; background:black; font-family:Arial; }
+  #viewer { width:100%; height:100vh; }
+  
+  #panel {
+    position:fixed; top:10px; left:10px; z-index:999;
+    background:rgba(0,0,0,0.8); padding:10px; border-radius: 8px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  
+  button { padding:10px; cursor:pointer; font-weight: bold; border: none; border-radius: 4px; }
+  
+  /* Arrow styling */
+  .arrow { width:60px; height:60px; cursor:pointer; transition: transform 0.2s; }
+  .arrow:hover { transform: scale(1.2); }
+  .unmapped path { fill: #ffcc00; } 
+  .mapped path { fill: #ffffff; }
+  
+  /* When adding mode is active, make the viewer cursor a crosshair */
+  .adding-mode { cursor: crosshair !important; }
+</style>
+</head>
+
+<body>
+
+<div id="panel">
+  <button onclick="document.getElementById('importPicker').click()">📂 Load Metadata</button>
+  <button onclick="exportJS()">📦 Export scenes.js</button>
+  <button id="addArrowBtn" onclick="toggleAddMode()">➕ Add Arrow</button>
+  <span style="color:white; font-size: 14px;" id="current-path-display"></span>
+</div>
+
+<div id="viewer"></div>
+
+<input type="file" id="imagePicker" accept="image/jpeg, image/png" style="display:none;">
+<input type="file" id="importPicker" accept=".js" style="display:none;">
+
+<script>
+// Base directory for your images
+const BASE_DIR = "ar/"; 
+let viewer;
+let activeArrowIndex = null;
+let isAddingMode = false;
+
+// Initialize with a default starting point
+let currentScene = BASE_DIR + "1BM.jpg"; 
+
+let DATA = {
+  [currentScene]: {
+    pano: currentScene,
+    arrows: generateDefaultArrows()
+  }
+};
+
+function generateDefaultArrows() {
+  return [
+    { pitch: -10, yaw: 0, next: null }
+  ];
+}
+
+function initEditor() {
+  buildScene();
+
+  // Add event listener to the viewer container to place new arrows
+  document.getElementById('viewer').addEventListener('mousedown', (e) => {
+    // Only place an arrow if we are in Add Mode AND it was a left-click
+    if (!isAddingMode || e.button !== 0) return;
+    
+    // Prevent placing an arrow if the user accidentally clicked on an existing UI element
+    if (e.target.closest('.pnlm-hotspot') || e.target.closest('#panel')) return;
+
+    const coords = viewer.mouseEventToCoords(e);
+    if(coords) {
+      // Add the new arrow to the data array
+      DATA[currentScene].arrows.push({
+        pitch: coords[0],
+        yaw: coords[1],
+        next: null
+      });
+      
+      // Turn off adding mode and rebuild to show the new arrow
+      toggleAddMode();
+      buildScene();
+    }
+  });
+}
+
+function buildScene() {
+  document.getElementById("current-path-display").innerText = "Current: " + currentScene;
+  const scene = DATA[currentScene];
+
+  if (viewer) viewer.destroy();
+
+  viewer = pannellum.viewer("viewer", {
+    type: "equirectangular",
+    panorama: scene.pano,
+    autoLoad: true,
+    hotSpots: scene.arrows.map((a, i) => ({
+      id: "hs" + i,
+      pitch: a.pitch,
+      yaw: a.yaw,
+      type: "info",
+      createTooltipFunc: (div) => makeArrow(div, i)
+    }))
+  });
+}
+
+function toggleAddMode() {
+  isAddingMode = !isAddingMode;
+  const btn = document.getElementById("addArrowBtn");
+  const viewerDiv = document.querySelector(".pnlm-container") || document.getElementById("viewer");
+  
+  if (isAddingMode) {
+    btn.innerText = "❌ Cancel Add";
+    btn.style.backgroundColor = "#ff4444";
+    btn.style.color = "white";
+    viewerDiv.classList.add("adding-mode");
+  } else {
+    btn.innerText = "➕ Add Arrow";
+    btn.style.backgroundColor = "";
+    btn.style.color = "black";
+    viewerDiv.classList.remove("adding-mode");
+  }
+}
+
+function makeArrow(div, index) {
+  const arrowData = DATA[currentScene].arrows[index];
+  const isMapped = arrowData.next !== null;
+  
+  const arrow = document.createElement("div");
+  arrow.className = "arrow " + (isMapped ? "mapped" : "unmapped");
+  arrow.innerHTML = `<svg viewBox="0 0 24 24" width="60"><path d="M12 2 L22 20 H2 Z"/></svg>`;
+
+  let isDragging = false;
+
+  // DRAG LOGIC
+  arrow.onmousedown = (e) => {
+    if (e.button !== 0) return; // Only drag on left click
+    e.stopPropagation();
+    isDragging = false;
+
+    document.onmousemove = (ev) => {
+      isDragging = true;
+      const coords = viewer.mouseEventToCoords(ev);
+      DATA[currentScene].arrows[index].pitch = coords[0];
+      DATA[currentScene].arrows[index].yaw = coords[1];
+
+      viewer.removeHotSpot("hs" + index);
+      viewer.addHotSpot({
+        id: "hs" + index,
+        pitch: coords[0],
+        yaw: coords[1],
+        type: "info",
+        createTooltipFunc: (d) => makeArrow(d, index)
+      });
+    };
+
+    document.onmouseup = () => { document.onmousemove = null; };
+  };
+
+  // LEFT CLICK LOGIC (Navigate or Map)
+  arrow.onclick = (e) => {
+    e.stopPropagation();
+    if (isDragging || isAddingMode) return;
+
+    if (isMapped) {
+      currentScene = arrowData.next;
+      buildScene();
+    } else {
+      activeArrowIndex = index;
+      document.getElementById("imagePicker").click();
+    }
+  };
+
+  // RIGHT CLICK LOGIC (Delete Arrow)
+  arrow.oncontextmenu = (e) => {
+    e.preventDefault(); 
+    e.stopPropagation();
+    
+    if (confirm("Are you sure you want to delete this arrow?")) {
+      DATA[currentScene].arrows.splice(index, 1);
+      buildScene();
+    }
+  };
+
+  div.appendChild(arrow);
+}
+
+// HANDLE FILE SELECTION (MAPPING)
+document.getElementById("imagePicker").onchange = function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const fileName = file.name;
+  const newScenePath = BASE_DIR + fileName;
+
+  DATA[currentScene].arrows[activeArrowIndex].next = newScenePath;
+
+  if (!DATA[newScenePath]) {
+    DATA[newScenePath] = {
+      pano: newScenePath,
+      arrows: generateDefaultArrows()
+    };
+  }
+
+  this.value = ''; 
+  currentScene = newScenePath;
+  buildScene();
+};
+
+// HANDLE METADATA IMPORT (scenes.js)
+document.getElementById("importPicker").onchange = function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(event) {
+    const content = event.target.result;
+    try {
+      // Regex to extract the SCENES JSON string from the file content
+      const scenesMatch = content.match(/const SCENES = (\{[\s\S]*\});/);
+      const startSceneMatch = content.match(/const START_SCENE = "(.*?)";/);
+
+      if (scenesMatch && scenesMatch[1]) {
+        DATA = JSON.parse(scenesMatch[1]);
+        
+        if (startSceneMatch && startSceneMatch[1]) {
+          currentScene = startSceneMatch[1];
+        } else {
+          currentScene = Object.keys(DATA)[0]; // Fallback to first scene
+        }
+
+        buildScene();
+        alert("Metadata loaded successfully! You can resume editing.");
+      } else {
+        alert("Could not read scenes.js data. Ensure you selected the correct file.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error parsing the file. The file might be corrupted.");
+    }
+  };
+  
+  reader.readAsText(file);
+  this.value = ''; // Reset input so the same file can be loaded again if needed
+};
+
+function exportJS() {
+  const output = `
+// Auto-generated by Tour Editor
+const START_SCENE = "${BASE_DIR}1BM.jpg";
+const SCENES = ${JSON.stringify(DATA, null, 2)};
+  `;
+
+  const blob = new Blob([output.trim()], { type: "application/javascript" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "scenes.js";
+  a.click();
+}
+
+// Boot up
+initEditor();
+</script>
+</body>
+</html>

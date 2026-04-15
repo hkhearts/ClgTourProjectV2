@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auto Navigation Tour</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
+<script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+
+<style>
+html, body {
+  margin: 0;
+  height: 100%;
+  background: black;
+}
+
+#viewer {
+  width: 100%;
+  height: 100%;
+}
+
+/* Remove default hotspot look */
+.pnlm-hotspot-base,
+.pnlm-hotspot,
+.pnlm-hotspot span {
+  background: none !important;
+  border: none !important;
+}
+.pnlm-hotspot span {
+  display: none !important;
+}
+
+button {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 999;
+  padding: 10px 15px;
+  background: black;
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="viewer"></div>
+<button onclick="resetTour()">Reset</button>
+
+<script>
+
+/* ===============================
+   SCENES
+================================ */
+
+const SCENES = {
+
+  f0_mid: {
+    pano: 'ar/1BM.jpg',
+    hotSpots: [
+      { pitch:-10, yaw:-40, next:'f0_forward' },
+      { pitch:-10, yaw:180, next:'f0_back' },
+      { pitch:-10, yaw:-90, next:'f0_left' },
+      { pitch:-10, yaw:90, next:'f0_right' }
+    ]
+  },
+
+  f0_forward: {
+    pano: 'ar/1FORWARD.jpg',
+    hotSpots: [
+      { pitch:-10, yaw:180, next:'f0_mid' }
+    ]
+  },
+
+  f0_back: {
+    pano: 'ar/1BACK.jpg',
+    hotSpots: [
+      { pitch:-10, yaw:0, next:'f0_mid' }
+    ]
+  },
+
+  f0_left: {
+    pano: 'ar/1LEFT1.jpg',
+    hotSpots: [
+      { pitch:-10, yaw:90, next:'f0_mid' },
+      { pitch:-10, yaw:0, next:'f0_left2' }
+    ]
+  },
+
+  f0_left2: {
+    pano: 'ar/1LEFT2.jpg',
+    hotSpots: [
+      { pitch:-10, yaw:180, next:'f0_left' }
+    ]
+  },
+
+  f0_right: {
+    pano: 'ar/1RIGHT1.jpg',
+    hotSpots: [
+      { pitch:-10, yaw:-90, next:'f0_mid' },
+      { pitch:-10, yaw:0, next:'f0_right2' }
+    ]
+  },
+
+  f0_right2: {
+    pano: 'ar/1RIGHT2.jpg',
+    hotSpots: [
+      { pitch:-10, yaw:180, next:'f0_right' }
+    ]
+  }
+
+};
+
+
+/* ===============================
+   ARROW UI
+================================ */
+
+function makeArrow(div, args) {
+  const arrow = document.createElement("div");
+
+  arrow.innerHTML = `
+    <svg width="70" height="70" viewBox="0 0 24 24">
+      <path d="M12 2 L22 20 H2 Z" fill="white"/>
+    </svg>
+  `;
+
+  arrow.style.cursor = "pointer";
+  arrow.style.opacity = "0.9";
+  arrow.style.transform = `rotate(${args.rotate}deg) translateY(25px)`;
+  arrow.style.transition = "0.2s";
+
+  arrow.onclick = (e) => {
+    e.stopPropagation();
+    viewer.loadScene(args.next, null, null, 1000);
+  };
+
+  div.appendChild(arrow);
+}
+
+
+/* ===============================
+   BUILD CONFIG
+================================ */
+
+function buildConfig() {
+  const scenes = {};
+
+  Object.keys(SCENES).forEach(id => {
+    const s = SCENES[id];
+
+    scenes[id] = {
+      panorama: s.pano,
+      hotSpots: s.hotSpots.map(h => ({
+        pitch: h.pitch,
+        yaw: h.yaw,
+        type: "info",
+        createTooltipFunc: makeArrow,
+        createTooltipArgs: {
+          next: h.next,
+          rotate: h.yaw
+        }
+      }))
+    };
+  });
+
+  return {
+    default: {
+      firstScene: "f0_mid",
+      autoLoad: true,
+      hfov: 100
+    },
+    scenes
+  };
+}
+
+
+/* ===============================
+   AUTO NAVIGATION
+================================ */
+
+function autoNavigate() {
+  const currentYaw = viewer.getYaw();
+  const scene = SCENES[currentScene];
+
+  if (!scene) return;
+
+  let bestMatch = null;
+  let smallestDiff = 999;
+
+  scene.hotSpots.forEach(h => {
+    let diff = Math.abs(currentYaw - h.yaw);
+    if (diff > 180) diff = 360 - diff;
+
+    if (diff < smallestDiff) {
+      smallestDiff = diff;
+      bestMatch = h;
+    }
+  });
+
+  if (bestMatch && smallestDiff < 60) {
+    viewer.loadScene(bestMatch.next, null, null, 1000);
+  }
+}
+
+
+/* ===============================
+   INIT
+================================ */
+
+let viewer;
+let currentScene = null;
+
+window.onload = () => {
+
+  viewer = pannellum.viewer("viewer", buildConfig());
+
+  viewer.on('scenechange', (sceneId) => {
+    currentScene = sceneId;
+  });
+
+  document.getElementById("viewer").addEventListener("click", () => {
+    autoNavigate();
+  });
+
+};
+
+
+/* ===============================
+   RESET
+================================ */
+
+function resetTour() {
+  location.reload();
+}
+
+</script>
+
+</body>
+</html>

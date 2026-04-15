@@ -35,94 +35,369 @@ html, body {
 <body>
 
 <div id="viewer"></div>
-
+<button onclick="resetTour()" style="
+  position:fixed;
+  top:20px;
+  right:20px;
+  z-index:999;
+  padding:10px 15px;
+  background:black;
+  color:white;
+  border:none;
+  cursor:pointer;
+  border-radius:5px;
+">
+Reset Tour
+</button>
 <script>
 /* ===============================
    SCENES
 ================================ */
+
 const SCENES = {
-  path_0: {
+  a0_gate: {
     pano: 'ar/0GATE.jpg',
     hotSpots: [
-      { pitch:-15, yaw:0, type:'forward', next:'path_1' }
+      { pitch:-15, yaw:0, type:'forward', next:'a0_watch_1' }
     ]
   },
 
-  path_1: {
+  a0_watch_1: {
     pano: 'ar/0WATCH.jpg',
     hotSpots: [
-      { pitch:-15, yaw:0, type:'forward', next:'path_2' },
-      { pitch:-15, yaw:180, type:'back', next:'path_0' }
+      { pitch:-15, yaw:0, type:'forward', next:'a0_watch_2' },
+      { pitch:-15, yaw:180, type:'back', next:'a0_gate' }
     ]
   },
 
-  path_2: {
+  a0_watch_2: {
     pano: 'ar/0WATCH1.jpg',
     hotSpots: [
-      { pitch:-15, yaw:0, type:'forward', next:'path_3' },
-      { pitch:-15, yaw:180, type:'back', next:'path_1' }
+      { pitch:-15, yaw:0, type:'forward', next:'a0_entrance_main' },
+      { pitch:-15, yaw:180, type:'back', next:'a0_watch_1' }
     ]
   },
 
-  path_3: {
+  a0_entrance_main: {
     pano: 'ar/0ENTRANCE.jpg',
     hotSpots: [
-      { pitch:-15, yaw:0, type:'forward', next:'path_4' },
-      { pitch:-10, yaw:90, type:'forward', next:'path_2' }
+      { pitch:-15, yaw:0, type:'forward', next:'a0_entrance_1' },
+      { pitch:-15, yaw:90, type:'forward', next:'a0_watch_2' },
+      { pitch:-15, yaw:-90, type:'forward', next:'a0_entrance_main1' }
     ]
   },
-
-  path_4: {
+  a0_entrance_main1: {
+    pano: 'ar/0ENTRANCE3.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:-90, type:'forward', next:'a0_entrance_parking' },
+      { pitch:-10, yaw:90, type:'forward', next:'a0_entrance_main' }
+    ]
+  },
+  a0_entrance_parking: {
+    pano: 'ar/0PARKING.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:-90, type:'forward', next:'a0_entrance_main1' },
+      { pitch:-10, yaw:90, type:'forward', next:'a0_entrance_ghostel' }
+    ]
+  },
+  a0_entrance_ghostel: {
+    pano: 'ar/0GHOSTEL.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:-90, type:'forward', next:'a0_entrance_parking' },
+      { pitch:-10, yaw:90, type:'forward', next:'a0_entrance_parking1' }
+    ]
+  },
+  a0_entrance_parking1: {
+    pano: 'ar/0PARKING2.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:-90, type:'forward', next:'a0_entrance_power_house' },
+      { pitch:-10, yaw:90, type:'forward', next:'a0_entrance_ghostel' }
+    ]
+  },
+  a0_entrance_power_house: {
+    pano: 'ar/0POWERHOUSE.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:0, type:'forward', next:'a0_hospital' },
+      { pitch:-3, yaw:120, type:'forward', next:'d0_corridor_left3' },
+      { pitch:-10, yaw:180, type:'forward', next:'a0_entrance_parking1' }
+    ]
+  },
+  a0_entrance_1: {
     pano: 'ar/0ENTRANCE1.jpg',
     hotSpots: [
-      { pitch:-15, yaw:0, type:'forward', next:'path_5' },
-      { pitch:-15, yaw:180, type:'back', next:'path_3' }
+      { pitch:-15, yaw:0, type:'forward', next:'a0_entrance_2' },
+      { pitch:-15, yaw:180, type:'forward', next:'a0_entrance_main' }
     ]
   },
 
-  path_5: {
+  a0_entrance_2: {
     pano: 'ar/0ENTRANCE2.jpg',
     hotSpots: [
-      { pitch:-15, yaw:0, type:'forward', next:'path_6' },
-      { pitch:-15, yaw:180, type:'back', next:'path_4' }
+      { pitch:-15, yaw:0, type:'forward', next:'a0_junction' },
+      { pitch:-15, yaw:180, type:'back', next:'a0_entrance_1' }
     ]
   },
-
-  path_6: {
+  a0_hospital: {
+    pano: 'ar/0HOSPITAL.jpg',
+    hotSpots: [
+      { pitch:-5, yaw:60, type:'forward', next:'a0_hospital_right' },
+      { pitch:-5, yaw:120, type:'left', next:'a0_entrance_power_house' },
+      { pitch:-10, yaw:-60, type:'forward', next:'a0_hospital_left' }
+    ]
+  },
+  a0_hospital_left: {
+    pano: 'ar/0HOSPATH.jpg',
+    hotSpots: [
+      { pitch:-10, yaw:60, type:'left', next:'a0_hospital' },
+      { pitch:-10, yaw:-80, type:'forward', next:'a0_' }
+    ]
+  },
+  a0_hospital_right: {
+    pano: 'ar/0HOSPATH1.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:80, type:'forward', next:'a0_amenity_g' },
+      { pitch:-10, yaw:-60, type:'forward', next:'a0_hospital' }
+    ]
+  },
+  a0_amenity_g: {
+    pano: 'ar/0AMENITYG.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:80, type:'forward', next:'a0_' },
+      { pitch:-10, yaw:-60, type:'forward', next:'a0_hospital' }
+    ]
+  },
+  a0_junction: {
     pano: 'ar/0AM.jpg',
     hotSpots: [
-      { pitch:-5, yaw:180, type:'forward', next:'path_9' },
-      { pitch:-15, yaw:0, type:'forward', next:'path_5' },
-      { pitch:-5, yaw:-135, type:'right', next:'path_8' },
-      { pitch:-5, yaw:135, type:'left', next:'path_7' }
+      { pitch:-5, yaw:180, type:'forward', next:'a0_block_bm' },
+      { pitch:-15, yaw:0, type:'forward', next:'a0_entrance_2' },
+      { pitch:-5, yaw:-135, type:'right', next:'a0_corridor_right' },
+      { pitch:-5, yaw:135, type:'left', next:'a0_corridor_left' }
     ]
   },
-  path_7: {
+
+  a0_corridor_left: {
     pano: 'ar/0A-1.jpg',
     hotSpots: [
-      { pitch:-15, yaw:180, type:'forward', next:'path_7' },
-      { pitch:-15, yaw:0, type:'back', next:'path_6' }
+      { pitch:-15, yaw:0, type:'forward', next:'a0_block_bm' },
+      { pitch:-15, yaw:180, type:'forward', next:'a0_corridor_left1' }
     ]
   },
-  path_8: {
+  a0_corridor_left1: {
+    pano: 'ar/0A-2.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:-90, type:'forward', next:'a0_corridor_left' },
+      { pitch:-15, yaw:90, type:'forward', next:'a0_corridor_left2' }
+    ]
+  },
+  a0_corridor_left2: {
+    pano: 'ar/0A-3.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:-90, type:'forward', next:'b0_corridor_left2' },
+      { pitch:-15, yaw:0, type:'forward', next:'a0_corridor_left1' }
+    ]
+  },
+  a0_corridor_right: {
     pano: 'ar/0A1.jpg',
     hotSpots: [
-      { pitch:-15, yaw:180, type:'forward', next:'path_8' },
-      { pitch:-15, yaw:0, type:'forward', next:'path_9' }
+      { pitch:-15, yaw:180, type:'forward', next:'a0_corridor_right1' },
+      { pitch:-15, yaw:0, type:'forward', next:'a0_block_bm' },
+      { pitch:-15, yaw:90, type:'forward', next:'a0_' }
     ]
   },
-  path_9: {
+  a0_corridor_right1: {
+    pano: 'ar/0A2.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:-90, type:'forward', next:'a0_corridor_right' },
+      { pitch:-15, yaw:90, type:'forward', next:'a0_corridor_right2' },
+      
+    ]
+  },
+  a0_corridor_right2: {
+    pano: 'ar/0A3.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:-90, type:'forward', next:'b0_corridor_right2' },
+      { pitch:-15, yaw:180, type:'forward', next:'a0_corridor_right1' },
+      
+    ]
+  },
+  b0_corridor_right2: {
+    pano: 'ar/0B3.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:-90, type:'forward', next:'a0_corridor_right2' },
+      { pitch:-15, yaw:0, type:'forward', next:'a0_' },
+      { pitch:-15, yaw:90, type:'forward', next:'bc0_corridor_right1' },
+      
+    ]
+  },
+  bc0_corridor_right1: {
+    pano: 'ar/0BC2.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:90, type:'forward', next:'c0_corridor_right2' },
+      { pitch:-15, yaw:-90, type:'forward', next:'b0_corridor_right2' }
+    ]
+  },
+  c0_corridor_right2: {
+    pano: 'ar/0C3.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:0, type:'forward', next:'c0_corridor_right1' },
+      { pitch:-15, yaw:-90, type:'forward', next:'bc0_corridor_right1' }
+    ]
+  },
+  c0_corridor_right1: {
+    pano: 'ar/0C2.jpeg',
+    hotSpots: [
+      { pitch:-15, yaw:0, type:'forward', next:'c0_corridor_right' },
+      { pitch:-15, yaw:180, type:'forward', next:'c0_corridor_right2' }
+    ]
+  },
+  c0_corridor_right: {
+    pano: 'ar/0C1.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:-90, type:'forward', next:'d0_corridor_right' },
+      { pitch:-15, yaw:0, type:'forward', next:'c0_corridor_right1' },
+      { pitch:5, yaw:90, type:'forward', next:'bc0_corridor_right1' },
+      
+    ]
+  },
+  a0_block_bm: {
     pano: 'ar/0BM.jpg',
     hotSpots: [
-      { pitch:-15, yaw:180, type:'forward', next:'path_6' },
-      { pitch:-15, yaw:0, type:'forward', next:'path_9' },
-      { pitch:-15, yaw:-135, type:'left', next:'path_7' },
-      { pitch:-20, yaw:135, type:'right', next:'path_8' }
+      { pitch:-15, yaw:180, type:'back', next:'a0_junction' },
+      { pitch:-15, yaw:-135, type:'left', next:'a0_corridor_left' },
+      { pitch:-20, yaw:135, type:'right', next:'a0_corridor_right' },
+      { pitch:-5, yaw:-45, type:'left', next:'b0_corridor_left' },
+      { pitch:-10, yaw:35, type:'right', next:'b0_corridor_' }
     ]
   },
-
-}
-
+  b0_corridor_left: {
+    pano: 'ar/0B-1.jpg',
+    hotSpots: [
+      { pitch:-10, yaw:180, type:'forward', next:'a0_block_bm' },
+      { pitch:-15, yaw:0, type:'forward', next:'b0_corridor_left1' },
+      { pitch:-15, yaw:-100, type:'forward', next:'a0_corridor_left' },
+      { pitch:-15, yaw:100, type:'forward', next:'bc0_corridor_left1' }
+    ]
+  },
+  b0_corridor_left1: {
+    pano: 'ar/0B-2.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:180, type:'forward', next:'b0_corridor_left2' },
+      { pitch:-15, yaw:0, type:'forward', next:'b0_corridor_left' }
+    ]
+  },
+  b0_corridor_left2: {
+    pano: 'ar/0B-3.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:100, type:'forward', next:'a0_corridor_left2' },
+      { pitch:-15, yaw:0, type:'forward', next:'b0_corridor_left1' },
+      { pitch:-15, yaw:-100, type:'forward', next:'c0_corridor_left2' }
+    ]
+  },
+  bc0_corridor_left1: {
+    pano: 'ar/0BC-1.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:90, type:'forward', next:'c0_corridor_left' },
+      { pitch:-15, yaw:-90, type:'forward', next:'b0_corridor_left' }
+    ]
+  },
+  c0_corridor_left2: {
+    pano: 'ar/0C-3.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:90, type:'forward', next:'b0_corridor_left2' },
+      { pitch:-3, yaw:0, type:'forward', next:'c0_corridor_left' },
+      { pitch:-3, yaw:-10, type:'left', next:'dc0_corridor_left' }
+    ]
+  },
+  c0_corridor_left: {
+    pano: 'ar/0C-1.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:90, type:'forward', next:'d0_corridor_left' },
+      { pitch:-15, yaw:0, type:'forward', next:'c0_corridor_left2' },
+      { pitch:-15, yaw:-80, type:'forward', next:'bc0_corridor_left1' }
+    ]
+  },
+   d0_lib: {
+    pano: 'ar/0LIB.jpg',
+    hotSpots: [
+      { pitch:-5, yaw:150, type:'left', next:'d0_corridor_left2' },
+      { pitch:-5, yaw:0, type:'forward', next:'d0_lib1' }
+    ]
+  },
+  d0_lib1: {
+    pano: 'ar/0LIB2.jpg',
+    hotSpots: [
+      { pitch:-5, yaw:0, type:'forward', next:'d0_lib2' }
+    ]
+  },
+  d0_lib2: {
+    pano: 'ar/0LIB3.jpg',
+    hotSpots: [
+      { pitch:-5, yaw:0, type:'forward', next:'d0_lib' }
+    ]
+  },
+  d0_mid:{
+    pano: 'ar/0D0.jpg',
+    hotSpots: [
+      { pitch:5, yaw:170, type:'forward', next:'d0_corridor_' },
+      { pitch:-15, yaw:0, type:'forward', next:'d0_mid2' },
+      { pitch:-15, yaw:60, type:'forward', next:'d0_corridor_left' },
+      { pitch:-15, yaw:-60, type:'forward', next:'d0_corridor_right' }
+    ]
+  },
+  d0_mid2: {
+    pano: 'ar/0M.jpg',
+    hotSpots: [
+      { pitch:-5, yaw:180, type:'forward', next:'d0_mid' }
+    ]
+  },
+  d0_corridor_right: {
+    pano: 'ar/0D1.jpg',
+    hotSpots: [
+      { pitch:-7, yaw:180, type:'forward', next:'d0_mid' },
+      { pitch:-15, yaw:170, type:'left', next:'c0_corridor_right' },
+      { pitch:-15, yaw:0, type:'forward', next:'d0_corridor_left1' }
+    ]
+  },
+  d0_corridor_left: {
+    pano: 'ar/0D-1.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:170, type:'forward', next:'d0_mid' },
+      { pitch:-15, yaw:0, type:'forward', next:'d0_corridor_left1' },
+      { pitch:-15, yaw:-90, type:'forward', next:'c0_corridor_left' }
+    ]
+  },
+  d0_corridor_left1: {
+    pano: 'ar/0D-2.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:210, type:'forward', next:'d0_corridor_left' },
+      { pitch:-15, yaw:30, type:'forward', next:'d0_corridor_left2' }
+    ]
+  },
+  d0_corridor_left2: {
+    pano: 'ar/0D-4.jpg',
+    hotSpots: [
+      { pitch:0, yaw:180, type:'forward', next:'d0_corridor_left3' },
+      { pitch:-5, yaw:170, type:'left', next:'dc0_corridor_left' },
+      { pitch:-5, yaw:0, type:'forward', next:'d0_corridor_left1' },
+      { pitch:-5, yaw:-10, type:'left', next:'d0_lib' }
+    ]
+  },
+  dc0_corridor_left:{
+    pano: 'ar/0D-M.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:-90, type:'forward', next:'d0_corridor_left2' },
+      { pitch:-15, yaw:90, type:'forward', next:'c0_corridor_left2' }
+    ]
+  },
+  d0_corridor_left3: {
+    pano: 'ar/0D-3.jpg',
+    hotSpots: [
+      { pitch:-15, yaw:180, type:'forward', next:'d0_corridor_left2' },
+      { pitch:-15, yaw:0, type:'forward', next:'a0_entrance_power_house' }
+    ]
+  },
+};
 /* ===============================
    ARROW
 ================================ */
@@ -179,7 +454,7 @@ function buildConfig() {
     };
   });
 
-  const lastScene = localStorage.getItem('lastScene') || "path_0";
+  const lastScene = localStorage.getItem('lastScene') || "a0_gate";
   const yaw = parseFloat(localStorage.getItem('yaw')) || 0;
   const pitch = parseFloat(localStorage.getItem('pitch')) || 0;
 
@@ -200,14 +475,30 @@ function buildConfig() {
    INIT
 ================================ */
 let viewer;
-
+let lastValidScene = null;
+let currentScene = null;
 window.onload = () => {
   viewer = pannellum.viewer("viewer", buildConfig());
-
   // SAVE LAST SCENE
   viewer.on('scenechange', (sceneId) => {
     localStorage.setItem('lastScene', sceneId);
   });
+  // TRACK SCENES
+  viewer.on('scenechange', (sceneId) => {
+  if (currentScene !== sceneId) {
+    lastValidScene = currentScene;
+    currentScene = sceneId;
+  }
+
+  localStorage.setItem('lastScene', sceneId);
+});
+
+// ✅ HANDLE ERROR (AUTO BACK)
+viewer.on('error', () => {
+  if (lastValidScene) {
+    viewer.loadScene(lastValidScene);
+  }
+});
 
   // SAVE VIEW DIRECTION
   setInterval(() => {
@@ -224,6 +515,10 @@ window.onload = () => {
     }, 500);
   });
 };
+function resetTour() {
+  localStorage.clear();
+  location.reload();
+}
 </script>
 
 </body>
