@@ -11,8 +11,17 @@
 <style>
   body { margin:0; background:black; }
   #viewer { width:100%; height:100vh; }
-  .arrow { width:60px; height:60px; cursor:pointer; transition: transform 0.2s; filter: drop-shadow(0px 4px 4px rgba(0,0,0,0.5)); }
+  
+  .arrow { 
+    width:60px; height:60px; 
+    cursor:pointer; 
+    transition: transform 0.2s; 
+    filter: drop-shadow(0px 4px 4px rgba(0,0,0,0.5)); 
+  }
   .arrow:hover { transform: scale(1.2); }
+  
+  /* Optional: Hide Pannellum's default load box to make it even more seamless */
+  .pnlm-load-box { display: none !important; }
 </style>
 </head>
 
@@ -21,28 +30,37 @@
 <div id="viewer"></div>
 
 <script>
-// SCENES and START_SCENE are loaded directly from scenes.js
 let viewer;
-let currentScene = START_SCENE;
 
-function buildScene() {
-  const scene = SCENES[currentScene];
-  if (viewer) viewer.destroy();
+function initTour() {
+  // 1. Format your SCENES data into Pannellum's expected Multi-Scene format
+  const formattedScenes = {};
 
-  // Filter out any arrows that weren't mapped in the editor
-  const validArrows = scene.arrows.filter(a => a.next !== null);
+  for (const [sceneId, sceneData] of Object.entries(SCENES)) {
+    // Only include arrows that have actually been mapped to a destination
+    const validArrows = sceneData.arrows.filter(a => a.next !== null);
 
+    formattedScenes[sceneId] = {
+      type: "equirectangular",
+      panorama: sceneData.pano,
+      hotSpots: validArrows.map((a, i) => ({
+        id: sceneId + "_hs_" + i,
+        pitch: a.pitch,
+        yaw: a.yaw,
+        type: "info",
+        createTooltipFunc: (div) => makeArrow(div, a.next)
+      }))
+    };
+  }
+
+  // 2. Initialize the viewer exactly ONCE with all scenes loaded into memory
   viewer = pannellum.viewer("viewer", {
-    type: "equirectangular",
-    panorama: scene.pano,
-    autoLoad: true,
-    hotSpots: validArrows.map((a, i) => ({
-      id: "hs" + i,
-      pitch: a.pitch,
-      yaw: a.yaw,
-      type: "info",
-      createTooltipFunc: (div) => makeArrow(div, a.next)
-    }))
+    default: {
+      firstScene: START_SCENE,
+      autoLoad: true,
+      sceneFadeDuration: 1000 // Creates a smooth 1-second crossfade transition
+    },
+    scenes: formattedScenes
   });
 }
 
@@ -51,18 +69,17 @@ function makeArrow(div, nextScenePath) {
   arrow.className = "arrow";
   arrow.innerHTML = `<svg viewBox="0 0 24 24" width="60"><path d="M12 2 L22 20 H2 Z" fill="white"/></svg>`;
 
-  // Simple click to navigate
+  // 3. Use Pannellum's loadScene method for the smooth transition instead of rebuilding
   arrow.onclick = (e) => {
     e.stopPropagation();
-    currentScene = nextScenePath;
-    buildScene();
+    viewer.loadScene(nextScenePath);
   };
 
   div.appendChild(arrow);
 }
 
 // Start the tour
-buildScene();
+initTour();
 </script>
 </body>
 </html>
