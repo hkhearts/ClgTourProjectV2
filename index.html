@@ -1,525 +1,67 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Virtual Tour</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editor Window</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f0f2f5; 
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
-<script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+    .card {
+      background-color: #ffffff;
+      padding: 40px 60px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+      text-align: center;
+    }
 
-<style>
-html, body {
-  margin: 0;
-  height: 100%;
-  background: black;
-}
-#viewer {
-  width: 100%;
-  height: 100%;
-}
+    h1 {
+      color: #1a1a1a;
+      margin-top: 0;
+      margin-bottom: 24px;
+      font-size: 24px;
+    }
 
-/* REMOVE DEFAULT ICONS */
-.pnlm-hotspot-base,
-.pnlm-hotspot,
-.pnlm-hotspot span {
-  background: none !important;
-  border: none !important;
-}
-.pnlm-hotspot span {
-  display: none !important;
-}
-</style>
+    .btn {
+      display: inline-block;
+      text-decoration: none;
+      background-color: #0066cc;
+      color: #ffffff;
+      padding: 12px 28px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 16px;
+      transition: all 0.2s ease-in-out;
+      box-shadow: 0 4px 6px rgba(0, 102, 204, 0.2);
+    }
+
+    .btn:hover {
+      background-color: #0052a3;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 102, 204, 0.3);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 4px rgba(0, 102, 204, 0.2);
+    }
+  </style>
 </head>
-
 <body>
 
-<div id="viewer"></div>
-<button onclick="resetTour()" style="
-  position:fixed;
-  top:20px;
-  right:20px;
-  z-index:999;
-  padding:10px 15px;
-  background:black;
-  color:white;
-  border:none;
-  cursor:pointer;
-  border-radius:5px;
-">
-Reset Tour
-</button>
-<script>
-/* ===============================
-   SCENES
-================================ */
-
-const SCENES = {
-  a0_gate: {
-    pano: 'ar/0GATE.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:0, type:'forward', next:'a0_watch_1' }
-    ]
-  },
-
-  a0_watch_1: {
-    pano: 'ar/0WATCH.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:0, type:'forward', next:'a0_watch_2' },
-      { pitch:-15, yaw:180, type:'back', next:'a0_gate' }
-    ]
-  },
-
-  a0_watch_2: {
-    pano: 'ar/0WATCH1.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:0, type:'forward', next:'a0_entrance_main' },
-      { pitch:-15, yaw:180, type:'back', next:'a0_watch_1' }
-    ]
-  },
-
-  a0_entrance_main: {
-    pano: 'ar/0ENTRANCE.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:0, type:'forward', next:'a0_entrance_1' },
-      { pitch:-15, yaw:90, type:'forward', next:'a0_watch_2' },
-      { pitch:-15, yaw:-90, type:'forward', next:'a0_entrance_main1' }
-    ]
-  },
-  a0_entrance_main1: {
-    pano: 'ar/0ENTRANCE3.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:-90, type:'forward', next:'a0_entrance_parking' },
-      { pitch:-10, yaw:90, type:'forward', next:'a0_entrance_main' }
-    ]
-  },
-  a0_entrance_parking: {
-    pano: 'ar/0PARKING.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:-90, type:'forward', next:'a0_entrance_main1' },
-      { pitch:-10, yaw:90, type:'forward', next:'a0_entrance_ghostel' }
-    ]
-  },
-  a0_entrance_ghostel: {
-    pano: 'ar/0GHOSTEL.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:-90, type:'forward', next:'a0_entrance_parking' },
-      { pitch:-10, yaw:90, type:'forward', next:'a0_entrance_parking1' }
-    ]
-  },
-  a0_entrance_parking1: {
-    pano: 'ar/0PARKING2.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:-90, type:'forward', next:'a0_entrance_power_house' },
-      { pitch:-10, yaw:90, type:'forward', next:'a0_entrance_ghostel' }
-    ]
-  },
-  a0_entrance_power_house: {
-    pano: 'ar/0POWERHOUSE.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:0, type:'forward', next:'a0_hospital' },
-      { pitch:-3, yaw:120, type:'forward', next:'d0_corridor_left3' },
-      { pitch:-10, yaw:180, type:'forward', next:'a0_entrance_parking1' }
-    ]
-  },
-  a0_entrance_1: {
-    pano: 'ar/0ENTRANCE1.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:0, type:'forward', next:'a0_entrance_2' },
-      { pitch:-15, yaw:180, type:'forward', next:'a0_entrance_main' }
-    ]
-  },
-
-  a0_entrance_2: {
-    pano: 'ar/0ENTRANCE2.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:0, type:'forward', next:'a0_junction' },
-      { pitch:-15, yaw:180, type:'back', next:'a0_entrance_1' }
-    ]
-  },
-  a0_hospital: {
-    pano: 'ar/0HOSPITAL.jpg',
-    hotSpots: [
-      { pitch:-5, yaw:60, type:'forward', next:'a0_hospital_right' },
-      { pitch:-5, yaw:120, type:'left', next:'a0_entrance_power_house' },
-      { pitch:-10, yaw:-60, type:'forward', next:'a0_hospital_left' }
-    ]
-  },
-  a0_hospital_left: {
-    pano: 'ar/0HOSPATH.jpg',
-    hotSpots: [
-      { pitch:-10, yaw:60, type:'left', next:'a0_hospital' },
-      { pitch:-10, yaw:-80, type:'forward', next:'a0_' }
-    ]
-  },
-  a0_hospital_right: {
-    pano: 'ar/0HOSPATH1.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:80, type:'forward', next:'a0_amenity_g' },
-      { pitch:-10, yaw:-60, type:'forward', next:'a0_hospital' }
-    ]
-  },
-  a0_amenity_g: {
-    pano: 'ar/0AMENITYG.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:80, type:'forward', next:'a0_' },
-      { pitch:-10, yaw:-60, type:'forward', next:'a0_hospital' }
-    ]
-  },
-  a0_junction: {
-    pano: 'ar/0AM.jpg',
-    hotSpots: [
-      { pitch:-5, yaw:180, type:'forward', next:'a0_block_bm' },
-      { pitch:-15, yaw:0, type:'forward', next:'a0_entrance_2' },
-      { pitch:-5, yaw:-135, type:'right', next:'a0_corridor_right' },
-      { pitch:-5, yaw:135, type:'left', next:'a0_corridor_left' }
-    ]
-  },
-
-  a0_corridor_left: {
-    pano: 'ar/0A-1.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:0, type:'forward', next:'a0_block_bm' },
-      { pitch:-15, yaw:180, type:'forward', next:'a0_corridor_left1' }
-    ]
-  },
-  a0_corridor_left1: {
-    pano: 'ar/0A-2.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:-90, type:'forward', next:'a0_corridor_left' },
-      { pitch:-15, yaw:90, type:'forward', next:'a0_corridor_left2' }
-    ]
-  },
-  a0_corridor_left2: {
-    pano: 'ar/0A-3.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:-90, type:'forward', next:'b0_corridor_left2' },
-      { pitch:-15, yaw:0, type:'forward', next:'a0_corridor_left1' }
-    ]
-  },
-  a0_corridor_right: {
-    pano: 'ar/0A1.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:180, type:'forward', next:'a0_corridor_right1' },
-      { pitch:-15, yaw:0, type:'forward', next:'a0_block_bm' },
-      { pitch:-15, yaw:90, type:'forward', next:'a0_' }
-    ]
-  },
-  a0_corridor_right1: {
-    pano: 'ar/0A2.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:-90, type:'forward', next:'a0_corridor_right' },
-      { pitch:-15, yaw:90, type:'forward', next:'a0_corridor_right2' },
-      
-    ]
-  },
-  a0_corridor_right2: {
-    pano: 'ar/0A3.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:-90, type:'forward', next:'b0_corridor_right2' },
-      { pitch:-15, yaw:180, type:'forward', next:'a0_corridor_right1' },
-      
-    ]
-  },
-  b0_corridor_right2: {
-    pano: 'ar/0B3.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:-90, type:'forward', next:'a0_corridor_right2' },
-      { pitch:-15, yaw:0, type:'forward', next:'a0_' },
-      { pitch:-15, yaw:90, type:'forward', next:'bc0_corridor_right1' },
-      
-    ]
-  },
-  bc0_corridor_right1: {
-    pano: 'ar/0BC2.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:90, type:'forward', next:'c0_corridor_right2' },
-      { pitch:-15, yaw:-90, type:'forward', next:'b0_corridor_right2' }
-    ]
-  },
-  c0_corridor_right2: {
-    pano: 'ar/0C3.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:0, type:'forward', next:'c0_corridor_right1' },
-      { pitch:-15, yaw:-90, type:'forward', next:'bc0_corridor_right1' }
-    ]
-  },
-  c0_corridor_right1: {
-    pano: 'ar/0C2.jpeg',
-    hotSpots: [
-      { pitch:-15, yaw:0, type:'forward', next:'c0_corridor_right' },
-      { pitch:-15, yaw:180, type:'forward', next:'c0_corridor_right2' }
-    ]
-  },
-  c0_corridor_right: {
-    pano: 'ar/0C1.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:-90, type:'forward', next:'d0_corridor_right' },
-      { pitch:-15, yaw:0, type:'forward', next:'c0_corridor_right1' },
-      { pitch:5, yaw:90, type:'forward', next:'bc0_corridor_right1' },
-      
-    ]
-  },
-  a0_block_bm: {
-    pano: 'ar/0BM.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:180, type:'back', next:'a0_junction' },
-      { pitch:-15, yaw:-135, type:'left', next:'a0_corridor_left' },
-      { pitch:-20, yaw:135, type:'right', next:'a0_corridor_right' },
-      { pitch:-5, yaw:-45, type:'left', next:'b0_corridor_left' },
-      { pitch:-10, yaw:35, type:'right', next:'b0_corridor_' }
-    ]
-  },
-  b0_corridor_left: {
-    pano: 'ar/0B-1.jpg',
-    hotSpots: [
-      { pitch:-10, yaw:180, type:'forward', next:'a0_block_bm' },
-      { pitch:-15, yaw:0, type:'forward', next:'b0_corridor_left1' },
-      { pitch:-15, yaw:-100, type:'forward', next:'a0_corridor_left' },
-      { pitch:-15, yaw:100, type:'forward', next:'bc0_corridor_left1' }
-    ]
-  },
-  b0_corridor_left1: {
-    pano: 'ar/0B-2.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:180, type:'forward', next:'b0_corridor_left2' },
-      { pitch:-15, yaw:0, type:'forward', next:'b0_corridor_left' }
-    ]
-  },
-  b0_corridor_left2: {
-    pano: 'ar/0B-3.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:100, type:'forward', next:'a0_corridor_left2' },
-      { pitch:-15, yaw:0, type:'forward', next:'b0_corridor_left1' },
-      { pitch:-15, yaw:-100, type:'forward', next:'c0_corridor_left2' }
-    ]
-  },
-  bc0_corridor_left1: {
-    pano: 'ar/0BC-1.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:90, type:'forward', next:'c0_corridor_left' },
-      { pitch:-15, yaw:-90, type:'forward', next:'b0_corridor_left' }
-    ]
-  },
-  c0_corridor_left2: {
-    pano: 'ar/0C-3.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:90, type:'forward', next:'b0_corridor_left2' },
-      { pitch:-3, yaw:0, type:'forward', next:'c0_corridor_left' },
-      { pitch:-3, yaw:-10, type:'left', next:'dc0_corridor_left' }
-    ]
-  },
-  c0_corridor_left: {
-    pano: 'ar/0C-1.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:90, type:'forward', next:'d0_corridor_left' },
-      { pitch:-15, yaw:0, type:'forward', next:'c0_corridor_left2' },
-      { pitch:-15, yaw:-80, type:'forward', next:'bc0_corridor_left1' }
-    ]
-  },
-   d0_lib: {
-    pano: 'ar/0LIB.jpg',
-    hotSpots: [
-      { pitch:-5, yaw:150, type:'left', next:'d0_corridor_left2' },
-      { pitch:-5, yaw:0, type:'forward', next:'d0_lib1' }
-    ]
-  },
-  d0_lib1: {
-    pano: 'ar/0LIB2.jpg',
-    hotSpots: [
-      { pitch:-5, yaw:0, type:'forward', next:'d0_lib2' }
-    ]
-  },
-  d0_lib2: {
-    pano: 'ar/0LIB3.jpg',
-    hotSpots: [
-      { pitch:-5, yaw:0, type:'forward', next:'d0_lib' }
-    ]
-  },
-  d0_mid:{
-    pano: 'ar/0D0.jpg',
-    hotSpots: [
-      { pitch:5, yaw:170, type:'forward', next:'d0_corridor_' },
-      { pitch:-15, yaw:0, type:'forward', next:'d0_mid2' },
-      { pitch:-15, yaw:60, type:'forward', next:'d0_corridor_left' },
-      { pitch:-15, yaw:-60, type:'forward', next:'d0_corridor_right' }
-    ]
-  },
-  d0_mid2: {
-    pano: 'ar/0M.jpg',
-    hotSpots: [
-      { pitch:-5, yaw:180, type:'forward', next:'d0_mid' }
-    ]
-  },
-  d0_corridor_right: {
-    pano: 'ar/0D1.jpg',
-    hotSpots: [
-      { pitch:-7, yaw:180, type:'forward', next:'d0_mid' },
-      { pitch:-15, yaw:170, type:'left', next:'c0_corridor_right' },
-      { pitch:-15, yaw:0, type:'forward', next:'d0_corridor_left1' }
-    ]
-  },
-  d0_corridor_left: {
-    pano: 'ar/0D-1.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:170, type:'forward', next:'d0_mid' },
-      { pitch:-15, yaw:0, type:'forward', next:'d0_corridor_left1' },
-      { pitch:-15, yaw:-90, type:'forward', next:'c0_corridor_left' }
-    ]
-  },
-  d0_corridor_left1: {
-    pano: 'ar/0D-2.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:210, type:'forward', next:'d0_corridor_left' },
-      { pitch:-15, yaw:30, type:'forward', next:'d0_corridor_left2' }
-    ]
-  },
-  d0_corridor_left2: {
-    pano: 'ar/0D-4.jpg',
-    hotSpots: [
-      { pitch:0, yaw:180, type:'forward', next:'d0_corridor_left3' },
-      { pitch:-5, yaw:170, type:'left', next:'dc0_corridor_left' },
-      { pitch:-5, yaw:0, type:'forward', next:'d0_corridor_left1' },
-      { pitch:-5, yaw:-10, type:'left', next:'d0_lib' }
-    ]
-  },
-  dc0_corridor_left:{
-    pano: 'ar/0D-M.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:-90, type:'forward', next:'d0_corridor_left2' },
-      { pitch:-15, yaw:90, type:'forward', next:'c0_corridor_left2' }
-    ]
-  },
-  d0_corridor_left3: {
-    pano: 'ar/0D-3.jpg',
-    hotSpots: [
-      { pitch:-15, yaw:180, type:'forward', next:'d0_corridor_left2' },
-      { pitch:-15, yaw:0, type:'forward', next:'a0_entrance_power_house' }
-    ]
-  },
-};
-/* ===============================
-   ARROW
-================================ */
-function makeArrowHotspot(div, args) {
-  div.style.width = "80px";
-  div.style.height = "80px";
-
-  const arrow = document.createElement("div");
-
-  arrow.innerHTML = `
-    <svg width="60" height="60" viewBox="0 0 24 24">
-      <path d="M12 2 L22 20 H2 Z" fill="white"/>
-    </svg>
-  `;
-
-  arrow.style.cursor = "pointer";
-  arrow.style.opacity = "0.9";
-  arrow.style.transform = `rotate(${args.rotate}deg) translateY(20px)`;
-  arrow.style.transition = "all 0.2s ease";
-  arrow.style.filter = "drop-shadow(0 3px 6px rgba(0,0,0,0.6))";
-
-  arrow.onclick = (e) => {
-    e.stopPropagation();
-    viewer.loadScene(args.next);
-  };
-
-  div.appendChild(arrow);
-}
-
-/* ===============================
-   BUILD CONFIG WITH MEMORY
-================================ */
-function buildConfig() {
-  const scenes = {};
-
-  Object.keys(SCENES).forEach(id => {
-    const s = SCENES[id];
-
-    scenes[id] = {
-      panorama: s.pano,
-      hotSpots: s.hotSpots.map(h => ({
-        pitch: h.pitch,
-        yaw: h.yaw,
-        type: "info",
-        createTooltipFunc: makeArrowHotspot,
-        createTooltipArgs: {
-          next: h.next,
-          rotate:
-            h.type === "forward" ? 0 :
-            h.type === "back" ? 180 :
-            h.type === "left" ? -90 : 90
-        }
-      }))
-    };
-  });
-
-  const lastScene = localStorage.getItem('lastScene') || "a0_gate";
-  const yaw = parseFloat(localStorage.getItem('yaw')) || 0;
-  const pitch = parseFloat(localStorage.getItem('pitch')) || 0;
-
-  return {
-    default: {
-      firstScene: lastScene,
-      yaw: yaw,
-      pitch: pitch,
-      autoLoad: true,
-      autoRotate: -2,
-      hfov: 100
-    },
-    scenes
-  };
-}
-
-/* ===============================
-   INIT
-================================ */
-let viewer;
-let lastValidScene = null;
-let currentScene = null;
-window.onload = () => {
-  viewer = pannellum.viewer("viewer", buildConfig());
-  // SAVE LAST SCENE
-  viewer.on('scenechange', (sceneId) => {
-    localStorage.setItem('lastScene', sceneId);
-  });
-  // TRACK SCENES
-  viewer.on('scenechange', (sceneId) => {
-  if (currentScene !== sceneId) {
-    lastValidScene = currentScene;
-    currentScene = sceneId;
-  }
-
-  localStorage.setItem('lastScene', sceneId);
-});
-
-// ✅ HANDLE ERROR (AUTO BACK)
-viewer.on('error', () => {
-  if (lastValidScene) {
-    viewer.loadScene(lastValidScene);
-  }
-});
-
-  // SAVE VIEW DIRECTION
-  setInterval(() => {
-    if (!viewer) return;
-    localStorage.setItem('yaw', viewer.getYaw());
-    localStorage.setItem('pitch', viewer.getPitch());
-  }, 500);
-
-  // ENTRY ZOOM
-  viewer.on('load', () => {
-    viewer.setHfov(120);
-    setTimeout(() => {
-      viewer.setHfov(90, 2000);
-    }, 500);
-  });
-};
-function resetTour() {
-  localStorage.clear();
-  location.reload();
-}
-</script>
+  <div class="card">
+    <h1>Navigate to Editor</h1>
+    <a href="./editor.html" class="btn">Open Editor</a>
+  </div>
 
 </body>
 </html>
